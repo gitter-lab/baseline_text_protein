@@ -1,0 +1,26 @@
+# Paths are relative to this release root after downloading external assets.
+model:
+  model_name_or_path: "external/models/prodva-mol-instructions"
+  text_encoder_path: "external/models/prodva-mol-instructions/text_tokenizer"
+  language_model_path: "external/models/prodva-mol-instructions/lm_tokenizer"
+  phrase_encoder_path: "external/models/prodva-mol-instructions/phrase_tokenizer"
+  phrase_sampler_type: "PROTEIN_FRAGMENT"
+  phrase_encoder_batch_size: 100000
+  protein_fragment_mapping_file: "external/data/mol-instructions/phrases.json"
+
+infer:
+  doc_top_k: 16
+  embedding_model_path: "external/models/pubmedbert-base-embeddings"
+  vector_store_path: "external/data/mol-instructions/index"
+  do_sample: true
+  max_new_tokens: 256
+  temperature: 0.7
+  top_k: 950
+  protein_sequence_mapping_file: "external/data/mol-instructions/training.json"
+
+eval:
+  eval_seed: 0
+  test_data_file: "external/data/mol-instructions/test.json"
+  batch_size: 1
+  task_type: "PROTEIN_DESIGN"
+  save_results_path: "outputs/prodva_mol_instructions.json"

@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "protrek": {
+    "checkpoint": "westlake-repl/ProTrek_650M",
+    "score": "100 * cosine(normalized protein embedding, normalized text embedding)",
+    "maximum_sequence_residues_for_primary_score": null
+  },
+  "retrieval": {
+    "embedding_model": "NeuML/pubmedbert-base-embeddings",
+    "normalize_embeddings": true,
+    "k": 1,
+    "duplicate_instruction_policy": "last sequence in training order"
+  },
+  "prodva": {
+    "mol_instructions": {
+      "doc_top_k": 16,
+      "do_sample": true,
+      "temperature": 0.7,
+      "token_top_k": 950,
+      "max_new_tokens": 256,
+      "eval_seed": 0
+    },
+    "cameo": {
+      "doc_top_k": 32,
+      "do_sample": true,
+      "temperature": 0.7,
+      "token_top_k": 950,
+      "max_new_tokens": 256,
+      "eval_seed": 0
+    }
+  },
+  "pinal_k50": {
+    "t2struc_model": "T2struc-1.2B",
+    "sequence_model": "SaProt-T",
+    "raw_structure_candidates": 50,
+    "t2struc_calls": 10,
+    "structures_per_call": 5,
+    "saved_ranked_candidates": 5,
+    "candidate_selection": "maximum (structure_logp + sequence_logp) / amino_acid_length",
+    "protrek_used_for_primary_selection": false,
+    "historical_sampling_seed_recorded": false
+  },
+  "esm2_oracle_mol_instructions": {
+    "model": "facebook/esm2_t33_650M_UR50D",
+    "model_revision": "08e4846e537177426273712802403f7ba8261b6c",
+    "candidate_mask_rates": [0.05, 0.1, 0.15, 0.25],
+    "num_infill_rounds": 5,
+    "maximum_esm_residues_for_edits": 1022,
+    "unchanged_top1_candidate_included": false,
+    "force_sequence_change": false,
+    "global_seed": 42,
+    "seed_scheme": "one uninterrupted Python Random stream in sample order",
+    "selection": "per-example maximum ProTrek score among the four edited candidates",
+    "tie_policy": "strict improvement; retain the earlier smaller mask rate on a tie",
+    "folding_coverage": {
+      "candidate_plddt": 5876,
+      "candidate_clash_penalty": 5876,
+      "reference_relative_pairwise": 2,
+      "changed_edit_pairwise_target": "Top-1 retrieval; excluded from reference-relative metrics"
+    },
+    "primary_evaluator_blind_comparison": false
+  },
+  "esm2_edit_only_cameo": {
+    "status": "complete",
+    "public_result_included": true,
+    "model": "facebook/esm2_t33_650M_UR50D",
+    "model_revision": "08e4846e537177426273712802403f7ba8261b6c",
+    "candidate_mask_rates": [0.05, 0.1, 0.15, 0.25],
+    "num_infill_rounds": 5,
+    "maximum_esm_residues_for_edits": 1022,
+    "unchanged_top1_candidate_included": false,
+    "force_sequence_change": false,
+    "global_seed": 42,
+    "seed_scheme": "one uninterrupted Python Random stream in sample order",
+    "selection": "per-example maximum ProTrek score among the four edited candidates",
+    "tie_policy": "strict improvement; retain the earlier smaller mask rate on a tie",
+    "primary_evaluator_blind_comparison": false
+  },
+  "mcmc": {
+    "steps": 50,
+    "proposal": "one uniformly selected non-identical canonical amino-acid substitution",
+    "initial_temperature": 1.0,
+    "final_temperature": 0.01,
+    "temperature_schedule": "linear",
+    "objective": "ProTrek score",
+    "initial_sequence": "Top-1 retrieval",
+    "primary_evaluator_blind_comparison": false
+  },
+  "esmfold2": {
+    "request_schema": {"groups": [{"target": "TARGET_SEQUENCE", "gen": ["GENERATED_SEQUENCE"]}]},
+    "maximum_groups_per_request": 8,
+    "timeout_seconds": 1800,
+    "retries": 3,
+    "native_x_policy": "verbatim",
+    "b_u_z_policy": "map to X for folding only",
+    "long_snapshot": "145/171 long slots scored; 26 pending"
+  }
+}

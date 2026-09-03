@@ -1,0 +1,27 @@
+# Paths are relative to this release root after downloading external assets.
+model:
+  model_name_or_path: "external/models/ProDVa-CAMEO"
+  text_encoder_path: "external/models/ProDVa-CAMEO/text_tokenizer"
+  language_model_path: "external/models/ProDVa-CAMEO/lm_tokenizer"
+  phrase_encoder_path: "external/models/ProDVa-CAMEO/phrase_tokenizer"
+  phrase_sampler_type: "PROTEIN_FRAGMENT"
+  phrase_encoder_batch_size: 100000
+  protein_fragment_mapping_file: "external/data/CAMEO/phrases.json"
+
+infer:
+  doc_top_k: 32
+  embedding_model_path: "external/models/pubmedbert-base-embeddings"
+  vector_store_path: "external/data/CAMEO/index_keywords"
+  do_sample: true
+  max_new_tokens: 256
+  temperature: 0.7
+  top_k: 950
+  protein_sequence_mapping_file: "external/data/CAMEO/training_keywords.json"
+
+eval:
+  eval_seed: 0
+  test_data_file: "external/data/CAMEO/test_keywords.json"
+  batch_size: 1
+  task_type: "PROTEIN_DESIGN"
+  save_results_path: "outputs/prodva_cameo_keywords.json"
+
