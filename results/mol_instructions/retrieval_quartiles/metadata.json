@@ -1,0 +1,12 @@
+{
+  "dataset": "mol_instructions",
+  "paper_table": 4,
+  "similarity": "text embedding similarity between the test instruction and nearest training instruction",
+  "similarity_source": "text_sim_5876.json",
+  "quartile_boundaries": [
+    0.9413898028433323,
+    0.9658682458102703,
+    0.9808319509029388
+  ],
+  "assignment": "Q1 <= q25; Q2 (q25,q50]; Q3 (q50,q75]; Q4 > q75"
+}

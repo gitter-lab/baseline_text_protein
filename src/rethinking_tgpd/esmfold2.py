@@ -1,21 +1,23 @@
-"""Authenticated client for the target-aware ESMFold2 scoring contract."""
+"""Local ESMFold2 inference and residue-level pLDDT scores."""
 
 from __future__ import annotations
 
-import json
-import os
+import math
+import sys
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
-from typing import Any, Iterable
+from dataclasses import asdict, dataclass
+from importlib.metadata import version
+from pathlib import Path
+from typing import Any
 
 
 CANONICAL_WITH_X = frozenset("ACDEFGHIKLMNPQRSTVWYX")
 
 
 def normalize_for_folding(sequence: str) -> tuple[str, str]:
-    """Retain X; map B/U/Z to X; reject every other residue."""
+    """Uppercase, retain X, map B/U/Z to X, and reject other residues."""
+    if not isinstance(sequence, str) or not sequence:
+        raise ValueError("folding requires a nonempty sequence")
     normalized: list[str] = []
     transformed = False
     for residue in sequence.upper():
@@ -26,70 +28,143 @@ def normalize_for_folding(sequence: str) -> tuple[str, str]:
             transformed = True
         else:
             raise ValueError(f"unsupported folding residue {residue!r}")
-    return "".join(normalized), "map_buz_to_x" if transformed else "verbatim"
+    transforms = ["uppercase"] if sequence != sequence.upper() else []
+    if transformed:
+        transforms.append("map_buz_to_x")
+    return "".join(normalized), "+".join(transforms) or "verbatim"
 
 
-class ESMFold2Client:
+@dataclass(frozen=True)
+class FoldingSettings:
+    model: str
+    revision: str | None
+    num_loops: int
+    num_sampling_steps: int
+    seed: int
+    chunk_size: int
+    lm_dropout: float
+    esmc_precision: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.model, str) or not self.model:
+            raise ValueError("model must be a checkpoint directory or model ID")
+        if self.revision is not None and not isinstance(self.revision, str):
+            raise ValueError("revision must be a string or null")
+        for name in ("num_loops", "num_sampling_steps", "chunk_size"):
+            value = getattr(self, name)
+            if type(value) is not int or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
+        if type(self.seed) is not int or not 0 <= self.seed < 2**32:
+            raise ValueError("seed must be an integer in [0, 2**32)")
+        if not isinstance(self.lm_dropout, (int, float)) or not 0 <= self.lm_dropout < 1:
+            raise ValueError("lm_dropout must be in [0, 1)")
+        if self.esmc_precision not in {"fp8", "bf16", "fp32"}:
+            raise ValueError("esmc_precision must be fp8, bf16, or fp32")
+
+
+class LocalESMFold2:
     def __init__(
         self,
+        settings: FoldingSettings,
         *,
-        url: str | None = None,
-        token: str | None = None,
-        timeout: float = 1800.0,
-        retries: int = 3,
-        backoff_seconds: float = 2.0,
+        device: str = "cuda",
+        ccd_cache: Path | None = None,
     ) -> None:
-        self.url = url or os.environ.get("ESMFOLD2_API_URL", "")
-        self.token = token or os.environ.get("ESMFOLD2_API_TOKEN", "")
-        parsed = urllib.parse.urlparse(self.url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise ValueError("set ESMFOLD2_API_URL to an explicit HTTP(S) /score URL")
-        if not self.token:
-            raise ValueError("ESMFOLD2_API_TOKEN is empty")
-        if timeout <= 0 or retries < 1 or backoff_seconds < 0:
-            raise ValueError("invalid request retry configuration")
-        self.timeout = timeout
-        self.retries = retries
-        self.backoff_seconds = backoff_seconds
-
-    def score_groups(self, groups: list[dict[str, Any]]) -> dict[str, Any]:
-        if not 1 <= len(groups) <= 8:
-            raise ValueError("each request must contain 1..8 groups")
-        payload = json.dumps({"groups": groups}, allow_nan=False).encode("utf-8")
-        headers = {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json",
-        }
-        last_error: Exception | None = None
-        for attempt in range(self.retries):
-            request = urllib.request.Request(
-                self.url, data=payload, headers=headers, method="POST"
+        if sys.version_info < (3, 12):
+            raise RuntimeError("Local ESMFold2 requires Python 3.12 or later")
+        try:
+            import torch
+            from esm.models.esmfold2 import (
+                ESMFold2InputBuilder,
+                EsmFold2Model,
+                ProteinInput,
+                StructurePredictionInput,
             )
-            try:
-                with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                    value = json.loads(response.read())
-                if not isinstance(value, dict) or not isinstance(value.get("groups"), list):
-                    raise RuntimeError("ESMFold2 response has no groups array")
-                if len(value["groups"]) != len(groups):
-                    raise RuntimeError("ESMFold2 response group count mismatch")
-                return value
-            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-                last_error = exc
-                if attempt + 1 < self.retries:
-                    time.sleep(self.backoff_seconds * (2**attempt))
-        raise RuntimeError("ESMFold2 request failed after retries") from last_error
+        except ImportError as exc:
+            raise RuntimeError("Install folding dependencies with: pip install -e '.[fold]'") from exc
+        if torch.device(device).type == "cuda" and not torch.cuda.is_available():
+            raise RuntimeError("CUDA is unavailable; run local folding on a GPU machine")
+        self.settings = settings
+        self.device = device
+        self._torch = torch
+        self._protein_input = ProteinInput
+        self._structure_input = StructurePredictionInput
+        self.builder = ESMFold2InputBuilder(ccd_cache=ccd_cache)
+        self.model = EsmFold2Model.from_pretrained(
+            settings.model,
+            revision=settings.revision,
+            device=device,
+            esmc_precision=settings.esmc_precision,
+        ).eval()
+        self.model.set_chunk_size(settings.chunk_size)
+        self.metadata = {
+            **asdict(settings),
+            "backend": "local",
+            "esm_version": version("esm"),
+            "device": device,
+            "num_diffusion_samples": 1,
+        }
 
-    def score_in_batches(
-        self, groups: Iterable[dict[str, Any]], max_groups: int = 8
-    ) -> Iterable[dict[str, Any]]:
-        if not 1 <= max_groups <= 8:
-            raise ValueError("max_groups must be in 1..8")
-        batch: list[dict[str, Any]] = []
-        for group in groups:
-            batch.append(group)
-            if len(batch) == max_groups:
-                yield self.score_groups(batch)
-                batch = []
-        if batch:
-            yield self.score_groups(batch)
+    def fold(self, sequence: str, structure_path: Path | None = None) -> dict[str, Any]:
+        sequence, _ = normalize_for_folding(sequence)
+        started = time.perf_counter()
+        inputs = self._structure_input(
+            sequences=[self._protein_input(id="A", sequence=sequence)]
+        )
+        with self._torch.inference_mode():
+            prediction = self.builder.fold(
+                self.model,
+                inputs,
+                num_loops=self.settings.num_loops,
+                num_sampling_steps=self.settings.num_sampling_steps,
+                num_diffusion_samples=1,
+                seed=self.settings.seed,
+                lm_dropout=self.settings.lm_dropout,
+            )
+        # MolecularComplex stores per-residue confidence on a 0..1 scale.
+        plddt = [100.0 * float(value) for value in prediction.complex.plddt]
+        if len(plddt) != len(sequence):
+            raise ValueError("predicted residue count does not match the input sequence")
+        if not all(math.isfinite(value) and 0 <= value <= 100 for value in plddt):
+            raise ValueError("model returned invalid pLDDT values")
+        elapsed = time.perf_counter() - started
+        if structure_path is not None:
+            structure_path.parent.mkdir(parents=True, exist_ok=True)
+            structure_path.write_text(prediction.complex.to_mmcif(), encoding="utf-8")
+        return {
+            "mean_plddt": math.fsum(plddt) / len(plddt),
+            "plddt_per_residue": plddt,
+            "fold_seconds": elapsed,
+            "structure_file": str(structure_path) if structure_path is not None else None,
+            "error": None,
+        }
+
+    def score_group(
+        self, group: dict[str, Any], structure_dir: Path | None = None
+    ) -> dict[str, Any]:
+        cache: dict[str, dict[str, Any]] = {}
+
+        def score(sequence: str, name: str) -> dict[str, Any]:
+            if sequence not in cache:
+                path = structure_dir / f"{name}.cif" if structure_dir is not None else None
+                try:
+                    cache[sequence] = self.fold(sequence, path)
+                except (RuntimeError, ValueError) as exc:
+                    cache[sequence] = {
+                        "mean_plddt": None,
+                        "plddt_per_residue": None,
+                        "fold_seconds": None,
+                        "structure_file": None,
+                        "error": f"{type(exc).__name__}: {exc}",
+                    }
+                    if self._torch.device(self.device).type == "cuda":
+                        self._torch.cuda.empty_cache()
+            return cache[sequence]
+
+        target = score(group["target"], "target")
+        generated = [score(sequence, f"gen_{i}") for i, sequence in enumerate(group["gen"])]
+        return {
+            "target_result": target,
+            "result": {key: [result[key] for result in generated] for key in target},
+        }
 

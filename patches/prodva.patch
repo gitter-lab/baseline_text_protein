@@ -1,0 +1,28 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -21,8 +21,8 @@
+     "transformers == 4.51.3",
+     "numpy == 1.26.4",
+     "spacy",
+-    "torch == 2.7.0",
+-    "faiss == 1.9.0",
++    "torch == 2.8.0",
++    "faiss-cpu == 1.13.2",
+     "peft == 0.14.0",
+     "datasets == 3.6.0",
+     "Django == 5.2.1",
+--- a/src/dvagen/infer/retriever.py
++++ b/src/dvagen/infer/retriever.py
+@@ -85,7 +85,11 @@
+                 logger.info_rank0(f"Saved FAISS vector store to {save_vector_store_path}")
+ 
+         if self.use_cuda:
+-            self.vector_store.index = faiss.index_cpu_to_all_gpus(self.vector_store.index)
++            try:
++                self.vector_store.index = faiss.index_cpu_to_all_gpus(self.vector_store.index)
++            except Exception as e:
++                logger.warning_rank0(f"Failed to move FAISS index to GPU: {e}. Using CPU index.")
++                self.use_cuda = False
+ 
+     def retrieve_documents(self, query: str, top_k: int) -> list[Document]:
+         top_k_documents = self.vector_store.similarity_search(query, k=top_k)

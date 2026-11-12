@@ -1,0 +1,43 @@
+--- a/utils/design_utils.py
++++ b/utils/design_utils.py
+@@ -41,7 +41,7 @@
+         else:
+             raise FileNotFoundError(f"Model {model_name} not found.")
+ 
+-    model.load_state_dict(torch.load(os.path.join(MODEL_ROOT, model_name, T2STRUCT), map_location='cpu'))
++    model.load_state_dict(torch.load(os.path.join(MODEL_ROOT, model_name, T2STRUCT), map_location='cpu', weights_only=False))
+ 
+     return model.to(DEVICE)
+     
+@@ -54,7 +54,7 @@
+ 
+ def load_SaProtT(cfg, SaProt_name="SaProtT"):
+     model = SaProtIFModel(cfg.model).to(torch.bfloat16)
+-    ckpt = torch.load(os.path.join(MODEL_ROOT, SaProt_name, "pytorch_model.bin"), map_location='cpu')
++    ckpt = torch.load(os.path.join(MODEL_ROOT, SaProt_name, "pytorch_model.bin"), map_location='cpu', weights_only=False)
+     ckpt_model = OrderedDict({k[len("module."):]: v for k, v in ckpt["state_dict"].items()})
+     model.load_state_dict(ckpt_model, strict=False)
+     return model.to(DEVICE)
+@@ -102,6 +102,7 @@
+         repetition_penalty=1.0,
+         max_length=1024,
+         min_length=64,
++        pad_token_id=1,
+     )
+ 
+ def T2StrucPrepareGenerationInputs(t2struc, desc, text_tokenizer, structre_tokenizer):
+@@ -132,11 +133,13 @@
+     }
+     
+ def T2StrucGeneration(t2struc, T2StrucGenerationDict, T2StrucGenerationConfig, structre_tokenizer):
++    if "pad_token_id" not in T2StrucGenerationDict or T2StrucGenerationDict["pad_token_id"] is None:
++        T2StrucGenerationDict["pad_token_id"] = T2StrucGenerationDict.get("eos_token_id", 0)
+     sample_results = t2struc.plm.generate(
+         do_sample=True,
+         generation_config=T2StrucGenerationConfig,
+         num_return_sequences=5,
+-        return_dict_in_generate=True, 
++        return_dict_in_generate=True,
+         **T2StrucGenerationDict
+     )
+     return {

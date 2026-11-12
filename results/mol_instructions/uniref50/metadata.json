@@ -1,0 +1,119 @@
+{
+  "dataset": "mol_instructions",
+  "paper_table": 5,
+  "benchmark_n": 5876,
+  "database": {
+    "label": "UniRef50",
+    "release": "2026_01",
+    "release_date": "2026-01-28",
+    "cluster_count": 60315044
+  },
+  "reference_source": "test.json",
+  "pinal_k10_source": "pinal_full_results.json",
+  "source_files": {
+    "reference": {
+      "search_artifact": "legacy_cached_8col",
+      "fasta": "reference_swissprotclap.fasta",
+      "m8": "reference_swissprotclap.m8"
+    },
+    "top1": {
+      "search_artifact": "legacy_cached_8col",
+      "fasta": "top1_swissprotclap.fasta",
+      "m8": "top1_swissprotclap.m8"
+    },
+    "esm2_infill": {
+      "search_artifact": "legacy_cached_8col",
+      "fasta": "esm2_swissprotclap.fasta",
+      "m8": "esm2_swissprotclap.m8"
+    },
+    "mcmc": {
+      "search_artifact": "legacy_cached_8col",
+      "fasta": "mcmc_swissprotclap.fasta",
+      "m8": "mcmc_swissprotclap.m8"
+    },
+    "pinal_k10": {
+      "search_artifact": "legacy_cached_8col",
+      "fasta": "pinal_swissprotclap.fasta",
+      "m8": "pinal_swissprotclap.m8"
+    },
+    "pinal_k50": {
+      "search_artifact": "fresh_reproducible_8col",
+      "fasta": "pinal_k50_swissprotclap.fasta",
+      "m8": "pinal_k50_swissprotclap.m8"
+    },
+    "prodva": {
+      "search_artifact": "legacy_cached_8col",
+      "fasta": "prodva_swissprotclap.fasta",
+      "m8": "prodva_swissprotclap.m8"
+    }
+  },
+  "coverage": {
+    "reference": {
+      "cached_queried": 5871,
+      "current_sequence_queries": 5763,
+      "different_sequence_queries": 108,
+      "not_queried": 5
+    },
+    "top1": {
+      "cached_queried": 5870,
+      "current_sequence_queries": 5776,
+      "different_sequence_queries": 94,
+      "not_queried": 6
+    },
+    "esm2_infill": {
+      "cached_queried": 5870,
+      "current_sequence_queries": 4156,
+      "different_sequence_queries": 1714,
+      "not_queried": 6
+    },
+    "mcmc": {
+      "cached_queried": 5070,
+      "current_sequence_queries": 5000,
+      "different_sequence_queries": 70,
+      "not_queried": 806
+    },
+    "pinal_k10": {
+      "cached_queried": 5876,
+      "current_sequence_queries": 5876,
+      "different_sequence_queries": 0,
+      "not_queried": 0
+    },
+    "pinal_k50": {
+      "cached_queried": 5876,
+      "current_sequence_queries": 5876,
+      "different_sequence_queries": 0,
+      "not_queried": 0
+    },
+    "prodva": {
+      "cached_queried": 5646,
+      "current_sequence_queries": 5450,
+      "different_sequence_queries": 196,
+      "not_queried": 230
+    }
+  },
+  "top_hit_rule": "bits desc; pident desc; evalue asc; qcov desc; tcov desc; alnlen desc; target lex asc",
+  "pinal_k50_search_protocol": {
+    "tool": "MMseqs2 easy-search",
+    "format_output": "query,target,pident,evalue,bits,qcov,tcov,alnlen",
+    "core_search_parameters": {
+      "sensitivity": 7.5,
+      "evalue_max": 0.001,
+      "max_seqs": 10,
+      "minimum_query_coverage": null,
+      "minimum_sequence_identity": null
+    },
+    "operational_parameters": "The exact command and MMseqs2 version are recorded in pinal_k50_run."
+  },
+  "legacy_search_commands": "Not recorded for each cached method; Pinal K=50 parameters do not establish identical search settings for the other methods.",
+  "summary.csv": "Only queried sequences matching current inputs exactly. Reference inputs are the benchmark test sequences; Pinal K=10 inputs are its original selected sequences. Other inputs are the parent per_sample.jsonl sequences.",
+  "cached_summary.csv": "All cached queries, including different historical sequences; retained for comparison with older paper values.",
+  "identity_statistics": "Mean, median and population std use hits only.",
+  "percentage_denominator": "All included queries (hits plus no-hit queries); unqueried or excluded sequences do not enter the denominator.",
+  "no_hit_policy": "A completed search with no hit is separate from an unavailable search; neither is assigned identity zero.",
+  "identity_scale": "0..100",
+  "thresholds": "strict >90 and <30",
+  "pinal_k50_run": {
+    "mmseqs_version": "13.45111",
+    "command": "mmseqs easy-search QUERY_FASTA DB OUT_M8 TMP_DIR --format-output query,target,pident,evalue,bits,qcov,tcov,alnlen -s 7.5 -e 1e-3 --max-seqs 10 --threads 28 --split-memory-limit 40G -v 3"
+  }
+}

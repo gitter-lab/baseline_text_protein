@@ -1,3 +1,5 @@
+# Template for upstream ProDVA; not loaded by this release's scripts.
+# Use: dvagen eval --config_path configs/prodva/mol_instructions.yaml
 # Paths are relative to this release root after downloading external assets.
 model:
   model_name_or_path: "external/models/prodva-mol-instructions"

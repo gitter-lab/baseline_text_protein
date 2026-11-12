@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "description": "Experiment settings for reference. Scripts do not load this file.",
   "protrek": {
     "checkpoint": "westlake-repl/ProTrek_650M",
     "score": "100 * cosine(normalized protein embedding, normalized text embedding)",
@@ -53,10 +54,7 @@
     "selection": "per-example maximum ProTrek score among the four edited candidates",
     "tie_policy": "strict improvement; retain the earlier smaller mask rate on a tie",
     "folding_coverage": {
-      "candidate_plddt": 5876,
-      "candidate_clash_penalty": 5876,
-      "reference_relative_pairwise": 2,
-      "changed_edit_pairwise_target": "Top-1 retrieval; excluded from reference-relative metrics"
+      "candidate_plddt": 5876
     },
     "primary_evaluator_blind_comparison": false
   },
@@ -87,12 +85,12 @@
     "primary_evaluator_blind_comparison": false
   },
   "esmfold2": {
-    "request_schema": {"groups": [{"target": "TARGET_SEQUENCE", "gen": ["GENERATED_SEQUENCE"]}]},
-    "maximum_groups_per_request": 8,
-    "timeout_seconds": 1800,
-    "retries": 3,
+    "implementation": "local inference",
+    "runtime_config": "configs/esmfold2.json",
+    "input_row": {"target": "TARGET_SEQUENCE", "gen": ["GENERATED_SEQUENCE"]},
+    "outputs": ["mean_plddt", "plddt_per_residue", "optional mmCIF"],
     "native_x_policy": "verbatim",
     "b_u_z_policy": "map to X for folding only",
-    "long_snapshot": "145/171 long slots scored; 26 pending"
+    "published_long_snapshot": "145/171 long slots scored; 26 pending"
   }
 }

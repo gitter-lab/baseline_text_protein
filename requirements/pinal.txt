@@ -1,0 +1,7 @@
+# Python 3.12; the Pinal runner uses a separate Transformers version.
+torch==2.8.0
+transformers==4.39.0
+omegaconf==2.3.0
+rich==14.3.3
+numpy==2.4.3
+huggingface-hub==0.36.2

@@ -1,0 +1,60 @@
+--- a/model/ProTrek/protrek_trimodal_model.py
++++ b/model/ProTrek/protrek_trimodal_model.py
+@@ -109,20 +109,20 @@
+     
+     def initialize_metrics(self, stage: str) -> dict:
+         return_dict = {
+-            f"{stage}_protein_text_acc": torchmetrics.Accuracy(),
+-            f"{stage}_text_protein_acc": torchmetrics.Accuracy(),
++            f"{stage}_protein_text_acc": torchmetrics.Accuracy(task="multiclass", num_classes=1000),
++            f"{stage}_text_protein_acc": torchmetrics.Accuracy(task="multiclass", num_classes=1000),
+         }
+         
+         if self.use_mlm_loss:
+-            return_dict[f"{stage}_protein_mask_acc"] = torchmetrics.Accuracy(ignore_index=-1)
++            return_dict[f"{stage}_protein_mask_acc"] = torchmetrics.Accuracy(task="multiclass", num_classes=1000, ignore_index=-1)
+             if self.structure_config is not None:
+-                return_dict[f"{stage}_structure_mask_acc"] = torchmetrics.Accuracy(ignore_index=-1)
++                return_dict[f"{stage}_structure_mask_acc"] = torchmetrics.Accuracy(task="multiclass", num_classes=1000, ignore_index=-1)
+         
+         if self.structure_config is not None:
+-            return_dict[f"{stage}_structure_protein_acc"] = torchmetrics.Accuracy()
+-            return_dict[f"{stage}_structure_text_acc"] = torchmetrics.Accuracy()
+-            return_dict[f"{stage}_text_structure_acc"] = torchmetrics.Accuracy()
+-            return_dict[f"{stage}_protein_structure_acc"] = torchmetrics.Accuracy()
++            return_dict[f"{stage}_structure_protein_acc"] = torchmetrics.Accuracy(task="multiclass", num_classes=1000)
++            return_dict[f"{stage}_structure_text_acc"] = torchmetrics.Accuracy(task="multiclass", num_classes=1000)
++            return_dict[f"{stage}_text_structure_acc"] = torchmetrics.Accuracy(task="multiclass", num_classes=1000)
++            return_dict[f"{stage}_protein_structure_acc"] = torchmetrics.Accuracy(task="multiclass", num_classes=1000)
+ 
+         return return_dict
+ 
+--- a/utils/lr_scheduler.py
++++ b/utils/lr_scheduler.py
+@@ -23,7 +23,7 @@
+         """
+         
+         self.init_lr = init_lr
+-        super().__init__(optimizer, last_epoch, verbose)
++        super().__init__(optimizer, last_epoch)
+     
+     def state_dict(self):
+         state_dict = {k: v for k, v in self.__dict__.items() if k not in ["optimizer"]}
+@@ -78,7 +78,7 @@
+         self.final_lr = final_lr
+         self.warmup_steps = warmup_steps
+         self.cosine_steps = cosine_steps
+-        super(CosineAnnealingLRScheduler, self).__init__(optimizer, last_epoch, verbose)
++        super(CosineAnnealingLRScheduler, self).__init__(optimizer, last_epoch)
+         
+     def state_dict(self):
+         state_dict = {k: v for k, v in self.__dict__.items() if k not in ["optimizer"]}
+@@ -151,7 +151,7 @@
+         self.start_decay_after_n_steps = start_decay_after_n_steps
+         self.end_decay_after_n_steps = end_decay_after_n_steps
+         self.on_use = on_use
+-        super(Esm2LRScheduler, self).__init__(optimizer, last_epoch, verbose)
++        super(Esm2LRScheduler, self).__init__(optimizer, last_epoch)
+     
+     def state_dict(self):
+         state_dict = {k: v for k, v in self.__dict__.items() if k not in ["optimizer"]}

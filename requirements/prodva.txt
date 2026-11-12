@@ -1,0 +1,18 @@
+# Python 3.12; install the patched upstream ProDVa package after this file.
+torch==2.8.0
+transformers==4.51.3
+numpy==1.26.4
+sentence-transformers==5.2.3
+faiss-cpu==1.13.2
+huggingface-hub==0.36.2
+accelerate==1.13.0
+peft==0.14.0
+datasets==3.6.0
+Django==5.2.1
+spacy==3.8.11
+nltk==3.9.3
+langchain==0.3.25
+langchain-community==0.3.25
+langchain-core==0.3.65
+langchain-huggingface==0.3.0
+langchain-text-splitters==0.3.8

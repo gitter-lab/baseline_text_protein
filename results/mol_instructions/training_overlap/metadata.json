@@ -1,0 +1,11 @@
+{
+  "dataset": "mol_instructions",
+  "paper_table": 3,
+  "subset_n": 1141,
+  "membership_source": "exp_mcmc_hard50.json",
+  "subset_definition": "Test sequences with less than 50% sequence identity to the training set.",
+  "training_identity_threshold_pct": 50,
+  "esm2_protocol": "current four-rate edit-only selection, excluding unchanged Top-1",
+  "std": "sample standard deviation (ddof=1)",
+  "deltas": "subset minus current full-test statistic; percentages divide by the full-test statistic"
+}

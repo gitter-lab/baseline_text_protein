@@ -1,0 +1,10 @@
+{
+  "model": "biohub/ESMFold2-Fast",
+  "revision": "45fe8656f5b3ef493c17fcf9abe9a2968902e712",
+  "num_loops": 3,
+  "num_sampling_steps": 50,
+  "seed": 0,
+  "chunk_size": 64,
+  "lm_dropout": 0.3,
+  "esmc_precision": "fp8"
+}

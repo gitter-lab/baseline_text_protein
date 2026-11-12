@@ -12,14 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATASETS = ("mol_instructions", "cameo")
-METRICS = (
-    "protrek",
-    "plddt",
-    "tm_score",
-    "residue_lddt",
-    "long_range_contact_f1",
-    "clash_penalty",
-)
+METRICS = ("protrek", "plddt")
 
 
 def metric_values(rows: list[dict], method: str, metric: str) -> list[float]:
